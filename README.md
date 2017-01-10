@@ -19,3 +19,6 @@ Simply click on the search box and type the food you wish to find.
 
 Then your results will be displayed, showing when and where to go.
 ![alt tag](https://github.com/greenkee/WhenToDine/blob/master/media/example2.png)
+
+#Created By:
+Justin Lin, Ashwinee Panda, Cathleen Jia at Calhacks 2016
