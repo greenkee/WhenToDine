@@ -15,3 +15,7 @@ Website that scrapes data from UC Berkeley Dining to determine when and where yo
 
 #Usage
 Simply click on the search box and type the food you wish to find.
+![alt tag](https://github.com/greenkee/WhenToDine/blob/master/media/example1.png)
+
+Then your results will be displayed, showing when and where to go.
+![alt tag](https://github.com/greenkee/WhenToDine/blob/master/media/example2.png)
