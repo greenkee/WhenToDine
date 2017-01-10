@@ -1,0 +1,143 @@
+import urllib3
+from bs4 import BeautifulSoup
+import datetime
+import cherrypy
+
+url = 'http://caldining.berkeley.edu/menus/all-locations-d1'
+url2 = 'http://caldining.berkeley.edu/menus/all-locations-d2'
+url3 = 'http://caldining.berkeley.edu/menus/all-locations-d3'
+url4 = 'http://caldining.berkeley.edu/menus/all-locations-d4'
+url5 = 'http://caldining.berkeley.edu/menus/all-locations-d5'
+url6 = 'http://caldining.berkeley.edu/menus/all-locations-d6'
+url7 = 'http://caldining.berkeley.edu/menus/all-locations-d7'
+url_list=[url,url2,url3,url4,url5,url6,url7]
+text_list=[]
+for url in url_list:
+    http_pool = urllib3.connection_from_url(url)
+    r = http_pool.urlopen('GET',url)
+    q = r.data.decode('utf-8')
+    soup = BeautifulSoup(q, "lxml")
+    for script in soup(["script", "style"]):
+        script.extract()
+    text_list.append(soup.get_text())
+
+current_day = datetime.datetime.now()
+
+def find_food(food):
+    food = food.lower()
+    for text in text_list:
+        lines = (line.strip() for line in text.splitlines())
+        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+        lst = []
+        for chunk in chunks:
+            chunk = chunk.lower()
+            food_day = current_day + datetime.timedelta(days=text_list.index(text))
+            if 'foothill' in chunk:
+                location = 'Foothill'
+            elif 'clark kerr' in chunk:
+                location = 'Clark Kerr'
+            elif 'crossroads' in chunk:
+                location = 'Crossroads'
+            if 'brunch' in chunk:
+                meal = 'Brunch'
+            elif 'dinner' in chunk:
+                meal = 'Dinner'
+            elif 'breakfast' in chunk:
+                meal = 'Breakfast'
+            elif 'lunch' in chunk:
+                meal = 'Lunch'
+            if food in chunk:
+                lst.append(location+' '+meal+' '+food_day.strftime("%A")+' ')
+        if lst:
+            # for item in lst:
+            #     print(item)
+            return lst
+    return 'Check back tomorrow!'
+
+class StringGenerator(object):
+    @cherrypy.expose
+    def index(self):
+        return """
+        <html>
+          <head>
+            <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+            <style>
+              .title {
+                font-family: 'Roboto', sans-serif;
+                font-size: 50px;
+                padding-left: 5%;
+                padding-top: 5%;
+                padding-bottom: 5%;
+                background: #ffb366;
+                color: #ffffff;
+              }
+              .form{
+                margin-top: 2%;
+                border: 2px solid #cccccc;
+                height: 10%;
+                width: 60%;
+                text-align: center;
+                font-family: 'Roboto', sans-serif;
+                font-size: 18px;
+                color: #808080;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+              }
+              .button {
+                background: #ffcc66;
+                border: = none;
+                color: white;
+                text-align: center;
+                font-family: 'Roboto', sans-serif;
+                font-size: 18px;
+                margin-top: 2%;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+              }
+            </style>
+
+          </head>
+          <body>
+            <h1 class = "title">When To Dine</h3>
+            <form method="get" action="generate">
+              <input type="text" placeholder="What are you hungry for?" class = "form" name="food" onclick="this.select();"/>
+              <br>
+              <button type="submit" class = "button">Let's Find Out!</button>
+            </form>
+          </body>
+        </html>"""
+
+    @cherrypy.expose
+    def generate(self, food='Pasta'):
+      result = '<br>'.join(find_food(food))
+      html =  """
+      <html>
+        <head>
+          <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+          <style>
+            body{
+              background: #ffb366;
+            }
+            .output {
+              font-family: 'Roboto', sans-serif;
+              font-size: 50px;
+              padding-top: 1em;
+              padding-bottom: 1em;
+              text-align: center;
+              color: #ffffff;
+            }
+          </style>
+
+        </head>
+        <body>
+          <div class = "output">%s</div>
+        </body>
+      </html>""" % result
+
+      return html
+
+
+if __name__ == '__main__':
+    cherrypy.quickstart(StringGenerator())
